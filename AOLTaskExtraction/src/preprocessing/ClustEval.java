@@ -11,8 +11,9 @@ class RefLabelFreq implements Comparable<RefLabelFreq> {
     public RefLabelFreq(String refLabel) {
         this.refLabel = refLabel;
         freq = 0;
+      
     }
-
+        
     @Override
     public int compareTo(RefLabelFreq o) {
         return -1 * Integer.compare(freq, o.freq); // descending
@@ -56,7 +57,7 @@ class RefLabelFreqs {
 class ClustEval {
 
     static final boolean DEBUG = false;
-    static final String mode = "wholeData";
+    static final String mode = "time_split";
 
     static void readLines(String fileName, List<String> classLabels, List<String> refLabels) throws Exception {
         FileReader fr = new FileReader(fileName);
@@ -110,7 +111,7 @@ class ClustEval {
         //	return;
         //}
         if (mode.equals("time_split")) {
-            File[] files = new File("C:/Users/Procheta//Documents/ResearchData/AOLTaskData/sessionOutputLabel/").listFiles();
+            File[] files = new File("/home/procheta/sessOutput/").listFiles();
             double jacAvg = 0;
             double favg = 0;
             double avgran = 0;
@@ -125,7 +126,7 @@ class ClustEval {
             ArrayList<Double> jaccardList = new ArrayList<Double>();
             for (File file : files) {
                 List<String> classLabels = new ArrayList<>(), refLabels = new ArrayList<>();
-                readLines("C:/Users/Procheta/Documents/ResearchData/AOLTaskData/sessEval/" + file.getName(), classLabels, refLabels);
+                readLines("/home/procheta/AOLTaskExperimentData/queryEmbeddingData/sessFinalQueryEmbed/" + file.getName(), classLabels, refLabels);
 
                 int numInstances = classLabels.size();
                 assert (numInstances == refLabels.size());
@@ -304,7 +305,7 @@ class ClustEval {
                     String l_j = classLabels.get(j);
                     String r_j = refLabels.get(j);
 
-                    boolean labelsAgree = l_i.equals(l_j);
+                    boolean labelsAgree = l_i.equals(l_j);  
                     boolean refClassesAgree = r_i.equals(r_j);
 
                     if (DEBUG) {
@@ -341,6 +342,8 @@ class ClustEval {
             System.out.println("jaccard: " + jac);
             System.out.println("Fscore: " + fscore);
             System.out.println("RI: " + acc);
+            System.out.println("Recall: "+ recall);
+             System.out.println("Precision : "+ prec);
 
         }
 

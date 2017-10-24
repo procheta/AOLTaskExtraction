@@ -17,8 +17,10 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -47,7 +49,7 @@ import org.xml.sax.SAXException;
  */
 public class UrlDumpFile {
 
-    HashSet<String> cluWebdocIdList;
+    LinkedList<String> cluWebdocIdList;
     String writeFileName;
     Analyzer analyzer;
     String clueWebSearchQueryUrl;
@@ -56,12 +58,12 @@ public class UrlDumpFile {
 
     public UrlDumpFile() {
 
-        writeFileName = "C:/Users/Procheta/Documents/ResearchData/AOLTaskData/urlDumpFile.txt";
-        queryFile = "C:/Users/Procheta/Documents/ResearchData/AOLTaskData/all-tasks.txt";
+        writeFileName = "C:/Users/Procheta/Documents/ResearchData/AOLTaskData/urlDumpFileNew.txt";
+        queryFile = "C:/Users/Procheta/Documents/ResearchData/AOLTaskData/queryFile.txt";
         clueWebSearchQueryUrl = "http://clueweb.adaptcentre.ie/WebSearcher/search?query=";
         clueWebDocIdUrl = "http://clueweb.adaptcentre.ie/WebSearcher/view?docid=";
         analyzer = new EnglishAnalyzer();
-        cluWebdocIdList = new HashSet<>();
+        cluWebdocIdList = new LinkedList<>();
     }
 
     // given the query File it will return all the cluweb doc ids related to those queries 
@@ -69,13 +71,19 @@ public class UrlDumpFile {
         FileReader fr = new FileReader(new File(fileName));
         BufferedReader br = new BufferedReader(fr);
 
+        FileWriter fw = new FileWriter(new File(writeFileName));
+        BufferedWriter bw = new BufferedWriter(fw);
+
         String line = br.readLine();
         ArrayList arr = new ArrayList<String>();
-        HashSet<String> docIdList = new HashSet<>();
+        LinkedList<String> docIdList = new LinkedList<>();
+        HashMap<String, LinkedList> cluwebIdMap = new HashMap<String, LinkedList>();
+        int exceptionCount = 0;
         int lineCount = 0;
         while (line != null) {
             String query = line;
             String text = clueWebSearchQueryUrl;
+            docIdList = new LinkedList<>();
 
             String st[] = query.split(" ");
             for (int i = 0; i < st.length; i++) {
@@ -88,8 +96,11 @@ public class UrlDumpFile {
             String all = "";
             int urlNumCheck = 0;
             int pageNum = 1;
+            String st4 = "";
+            String st2 = "";
+            String st7 = "";
             try {
-                while (pageNum <= 2) {
+                while (pageNum <= 10) {
                     all = "";
                     URL url = new URL(text + "&page=" + pageNum);
 
@@ -105,16 +116,29 @@ public class UrlDumpFile {
                     int count = 0;
                     for (int j = 0; j < jsonArray.size() - 1; j++) {
                         String st1 = ((Object) jsonArray.get(j)).toString();
-                        String st2 = st1.replace("[", "");
+                        st2 = st1.replace("[", "");
                         st2 = st2.replace("]", "");
                         char d = '"';
-                        String st4 = st2.substring(st2.indexOf("id" + d), st2.length());
-                        st4 = st4.substring(0, st4.indexOf(","));
-                        String st3[] = st2.split(",");
-                        docIdList.add(st4);
-                        arr.add(st4);
+                        st4 = st2.substring(st2.indexOf("id" + d), st2.length());
+                        st7 = st4;
+                        try {
+                            st4 = st4.substring(0, st4.indexOf(","));
+                            String st3[] = st2.split(",");
+                            String st5[] = st4.split(":");
+                            st5[1] = st5[1].replace("" + d, "");
+                            docIdList.add(st5[1]);
+                            arr.add(st4);
+                        } catch (Exception e) {
+                            st7 = st7.substring(st7.indexOf(",") + 1, st7.length());
+                            String st8 = st7.substring(0, st7.indexOf(","));
+                            String st5[] = st8.split(":");
+                            //System.out.println(st8);
+                            st5[1] = st5[1].replace("" + d, "");
+                            docIdList.add(st5[1]);
+                            arr.add(st4);
+                        }
                         count++;
-                        if (count >= 20) {
+                        if (count >= 100) {
                             urlNumCheck = 1;
                             break;
                         }
@@ -128,14 +152,27 @@ public class UrlDumpFile {
                     pageNum++;
                 }
             } catch (Exception e) {
+                exceptionCount++;
+                System.out.println(st7);
+                System.out.println(st2);
                 e.printStackTrace();
             }
 
             line = br.readLine();
             lineCount++;
+            System.out.println(lineCount);
+            bw.write(query + "\t");
+            for (String s : docIdList) {
+                bw.write(s + ",");
+
+            }
+            bw.newLine();
+            // cluwebIdMap.put(query, docIdList);
         }
-        System.out.println(arr.size());
-        System.out.println(docIdList.size());
+        //System.out.println(arr.size());
+
+        bw.close();
+        System.out.println(exceptionCount);
         System.out.println(lineCount);
 
         this.cluWebdocIdList = docIdList;
@@ -143,8 +180,20 @@ public class UrlDumpFile {
 
     public void writeDocSnippets() throws IOException, SAXException, TikaException {
 
+        FileReader fr = new FileReader(new File(writeFileName));
+        BufferedReader br = new BufferedReader(fr);
         FileWriter fw = new FileWriter(new File(writeFileName));
         BufferedWriter bwFile = new BufferedWriter(fw);
+        String line = br.readLine();
+
+        HashSet<String> DocIds = new HashSet<String>();
+        while (line != null) {
+
+            String st[] = line.split("\t");
+            String st1[] = st[1].split(",");
+            for (String s: st1)
+                DocIds.add(s);
+        }
 
         HttpGet request = null;
         HttpResponse response = null;
@@ -321,23 +370,23 @@ public class UrlDumpFile {
 
         FileReader fr = new FileReader(new File("C:/Users/Procheta/Documents/ResearchData/AOLTaskData/sessionOutputLabel/" + filename));
         BufferedReader br = new BufferedReader(fr);
-       String line2="";
-       String line1="";
+        String line2 = "";
+        String line1 = "";
         try {
             FileReader fr1 = new FileReader(new File("C:/Users/Procheta/Documents/ResearchData/AOLTaskData/sessionTrueLabel/" + filename));
             BufferedReader br1 = new BufferedReader(fr1);
             HashSet<String> idSet = new HashSet<>();
             line1 = br.readLine();
-             line2 = br1.readLine();
+            line2 = br1.readLine();
             // System.out.println(line2);
             while (line1 != null) {
-               String st[] = line2.split("\t");
+                String st[] = line2.split("\t");
                 bw.write(line1 + " " + st[1]);
                 bw.newLine();
                 idSet.add(line2);
                 line1 = br.readLine();
                 line2 = br1.readLine();
-               // break;
+                // break;
             }
             bw.close();
             System.out.println(idSet.size());
@@ -351,19 +400,19 @@ public class UrlDumpFile {
 
     public static void main(String[] args) throws IOException, FileNotFoundException, ParseException, SAXException, TikaException {
         UrlDumpFile urdp = new UrlDumpFile();
-        // urdp.getCluwebDocIds("C:/Users/Procheta/Documents/ResearchData/AOLTaskData/testFile.txt");
+        urdp.getCluwebDocIds("C:/Users/Procheta/Documents/ResearchData/AOLTaskData/queryFile.txt");
         // urdp.writeDocSnippets();
         // urdp.processQueryFile();
         // urdp.getTrueLabelsFile();
         // urdp.createEvalFile();
 
-        File[] files = new File("C:/Users/Procheta//Documents/ResearchData/AOLTaskData/sessionTrueLabel/").listFiles();
-        for (File file : files) {
-            // urdp.processQueryFile(file.getName());
-            System.out.println(file.getName());
-            urdp.createEvalFile(file.getName());
-           // break;
-        }
+        //  File[] files = new File("C:/Users/Procheta//Documents/ResearchData/AOLTaskData/sessionTrueLabel/").listFiles();
+        //  for (File file : files) {
+        // urdp.processQueryFile(file.getName());
+        //     System.out.println(file.getName());
+        //     urdp.createEvalFile(file.getName());
+        // break;
+        //  }
     }
 
 }
